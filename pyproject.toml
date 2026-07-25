@@ -1,0 +1,88 @@
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastapi-auth"
+version = "0.1.0"
+description = "Authentication toolkit for FastAPI applications."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Prabjeet Singh", email = "prabjeet.jhass@gmail.com" }
+]
+keywords = [
+    "fastapi",
+    "authentication",
+    "auth",
+    "jwt",
+    "security",
+    "password",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "fastapi>=0.115.0",
+    "sqlalchemy>=2.0",
+    "alembic>=1.14",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.2",
+    "python-jose[cryptography]>=3.3",
+    "pwdlib[argon2]>=0.2",
+    "email-validator>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "ruff>=0.12",
+    "mypy>=1.11",
+]
+
+[project.urls]
+Homepage = "https://github.com/CoderpreneurX/fastapi-auth"
+Repository = "https://github.com/CoderpreneurX/fastapi-auth"
+Issues = "https://github.com/CoderpreneurX/fastapi-auth/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fastapi_auth"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "UP",
+    "B",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_configs = true
