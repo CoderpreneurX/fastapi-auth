@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document describes the intended responsibility of each module in the project. It serves as the implementation blueprint before functionality is added.
+This document describes the intended responsibilities of each module in the project. It serves as the implementation blueprint before functionality is added.
 
 The guiding principles are:
 
@@ -22,11 +22,13 @@ fastapi_auth/
 ├── exceptions.py
 ├── core/
 ├── database/
+├── models/
 ├── dependencies/
 ├── routers/
 ├── schemas/
 └── services/
 ```
+
 
 ---
 
@@ -38,6 +40,7 @@ Contains application configuration.
 
 Responsibilities:
 
+* Database configuration
 * JWT configuration
 * Password hashing configuration
 * Token expiry settings
@@ -70,7 +73,7 @@ Routers should convert these exceptions into HTTP responses.
 
 # Core
 
-The `core` package contains reusable infrastructure that is independent of FastAPI.
+The `core` package contains reusable application utilities that are independent of FastAPI.
 
 ---
 
@@ -83,7 +86,7 @@ Should expose functions like:
 * hash_password()
 * verify_password()
 
-Uses `pwdlib` (Argon2).
+Uses `pwdlib` with Argon2.
 
 No database access.
 
@@ -125,8 +128,8 @@ Responsibilities:
 
 * Generate verification links
 * Generate password reset links
-* Email templates
-* Email sender abstraction
+* Manage email templates
+* Provide email sender abstraction
 
 Should not depend on any specific email provider.
 
@@ -134,28 +137,40 @@ Should not depend on any specific email provider.
 
 # Database
 
-Contains persistence logic only.
+Contains database infrastructure and persistence-related components only.
 
 ---
 
-## `database/models.py`
+## `database/session.py`
 
-Defines SQLAlchemy models.
+Responsible for SQLAlchemy database connectivity.
 
-Examples:
+Responsibilities:
 
-* User
-* RefreshToken
-* EmailVerification
-* PasswordReset
+* Create async database engine
+* Configure async session factory
+* Provide database session infrastructure
 
-No HTTP logic.
+Should not contain business logic.
+
+---
+
+## `database/base.py`
+
+Defines the SQLAlchemy declarative base.
+
+Responsibilities:
+
+* Provide the Base class for all ORM models
+* Expose SQLAlchemy metadata for migrations
+
+No database queries.
 
 ---
 
 ## `database/repository.py`
 
-Provides database operations.
+Provides database operations for ORM models.
 
 Examples:
 
@@ -166,9 +181,87 @@ Examples:
 * save_refresh_token()
 * revoke_refresh_token()
 
-Should contain all SQLAlchemy queries.
+Repositories may depend on:
 
-No authentication logic.
+* database sessions
+* SQLAlchemy models
+
+Repositories should contain database queries only.
+
+Repositories should not contain:
+
+* authentication logic
+* HTTP concerns
+* business workflows
+
+---
+
+## Database Sessions
+
+Database sessions are managed through SQLAlchemy's async session factory.
+
+Responsibilities:
+
+* Manage database transactions
+* Provide unit-of-work scope
+* Ensure sessions are properly created and closed
+
+Database sessions should be consumed by repositories/services through dependency providers.
+
+Routers should never directly interact with database sessions.
+
+---
+
+# Models
+
+Contains SQLAlchemy ORM models.
+
+Each model has its own module.
+
+Structure:
+
+```
+models/
+├── __init__.py
+├── user.py
+├── refresh_token.py
+└── verification_token.py
+```
+
+
+Examples:
+
+* User
+* RefreshToken
+* VerificationToken
+
+Models define:
+
+* database columns
+* relationships
+* constraints
+* indexes
+
+Models should contain no:
+
+* HTTP logic
+* authentication workflows
+* business rules
+
+---
+
+# Migrations
+
+Database migrations are managed through Alembic.
+
+Responsibilities:
+
+* Track database schema changes
+* Generate migrations from SQLAlchemy metadata
+* Apply schema changes
+* Roll back schema changes
+
+Alembic should depend on database metadata but should not contain application logic.
 
 ---
 
@@ -176,11 +269,19 @@ No authentication logic.
 
 Contains all Pydantic models.
 
+Schemas are responsible for validation and serialization only.
+
+They should not contain:
+
+* database queries
+* authentication workflows
+* business logic
+
 ---
 
 ## `schemas/user.py`
 
-User models.
+User-related schemas.
 
 Examples:
 
@@ -192,7 +293,7 @@ Examples:
 
 ## `schemas/auth.py`
 
-Authentication models.
+Authentication schemas.
 
 Examples:
 
@@ -205,17 +306,13 @@ Examples:
 
 ## `schemas/password.py`
 
-Password-related models.
+Password-related schemas.
 
 Examples:
 
 * ForgotPasswordRequest
 * ResetPasswordRequest
 * ChangePasswordRequest
-
-Schemas should perform validation only.
-
-No business logic.
 
 ---
 
@@ -224,6 +321,17 @@ No business logic.
 Business logic lives here.
 
 Services orchestrate repositories and core utilities.
+
+Services should contain:
+
+* workflows
+* business rules
+* application decisions
+
+Services should not contain:
+
+* HTTP code
+* direct database queries
 
 ---
 
@@ -241,11 +349,9 @@ Responsibilities:
 
 Coordinates:
 
-* repository
+* repositories
 * hashing
-* jwt
-
-Should contain no HTTP code.
+* JWT utilities
 
 ---
 
@@ -261,10 +367,10 @@ Responsibilities:
 
 Coordinates:
 
-* repository
+* repositories
 * hashing
-* email
-* tokens
+* email utilities
+* token utilities
 
 ---
 
@@ -280,15 +386,17 @@ Responsibilities:
 
 Coordinates:
 
-* repository
-* email
-* tokens
+* repositories
+* email utilities
+* token utilities
 
 ---
 
 # Dependencies
 
 FastAPI dependency providers.
+
+Dependencies connect framework-specific functionality with application components.
 
 ---
 
@@ -303,7 +411,13 @@ Examples:
 * get_current_verified_user()
 * require_admin()
 
-Should decode tokens and retrieve users via services/repositories.
+Responsibilities:
+
+* Extract authentication information
+* Validate tokens
+* Retrieve users through services/repositories
+
+Should not contain business workflows.
 
 ---
 
@@ -313,11 +427,17 @@ HTTP layer only.
 
 Routers should:
 
-* validate request bodies
-* call services
-* convert exceptions into HTTP responses
+* Validate request bodies
+* Call services
+* Convert exceptions into HTTP responses
+* Return API responses
 
-Routers should never contain business logic.
+Routers should never contain:
+
+* SQLAlchemy code
+* Password hashing
+* JWT creation
+* Business rules
 
 ---
 
@@ -353,29 +473,41 @@ Endpoints:
 
 # Dependency Flow
 
+Main application flow:
+
 ```
 Routers
-    │
-    ▼
+   │
+   ▼
 Services
-    │
-    ▼
+   │
+   ▼
 Repositories
-    │
-    ▼
+   │
+   ▼
 Database
 ```
 
-Shared utilities:
+Shared Utilities:
 
 ```
 Services
-    │
-    ├── Hashing
-    ├── JWT
-    ├── Tokens
-    └── Email
+│
+├── Hashing
+├── JWT
+├── Tokens
+└── Email
 ```
+
+Full dependency relationship:
+
+```
+Core Utilities
+   |
+   ▼
+Routers ───────► Services ───────► Repositories ───────► Database
+```
+
 
 ---
 
@@ -388,7 +520,7 @@ Services
 * No JWT creation
 * No business rules
 
-Only HTTP.
+Only HTTP handling.
 
 ---
 
@@ -413,6 +545,14 @@ Only HTTP.
 * Pure utility modules.
 * Reusable.
 * Framework-independent.
+
+---
+
+## Models
+
+* Define database structure.
+* Define relationships and constraints.
+* No application workflows.
 
 ---
 
