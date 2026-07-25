@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from fastapi_auth.config import settings
+from config import settings
 
 engine = create_async_engine(
     settings.DATABASE_URL,
