@@ -13,10 +13,9 @@ from sqlalchemy import (
     Text,
     func,
     Index,
-    relationship,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
 
@@ -119,6 +118,11 @@ class User(Base):
     )
 
     verification_tokens: Mapped[list["VerificationToken"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )
