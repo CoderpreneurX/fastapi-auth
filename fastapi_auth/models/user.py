@@ -13,6 +13,7 @@ from sqlalchemy import (
     Text,
     func,
     Index,
+    relationship,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -115,6 +116,11 @@ class User(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+    )
+
+    verification_tokens: Mapped[list["VerificationToken"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
 
 
