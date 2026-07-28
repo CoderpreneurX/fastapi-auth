@@ -15,7 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import Base
+from fastapi_auth.database import Base
 
 
 class VerificationTokenType(str, enum.Enum):
