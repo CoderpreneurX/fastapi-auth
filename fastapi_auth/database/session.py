@@ -1,10 +1,14 @@
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
 
-from fastapi_auth.config import settings
+from fastapi_auth.config import get_settings
+
+settings = get_settings()
 
 engine = create_async_engine(
     settings.DATABASE_URL,
@@ -17,3 +21,8 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
+
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        yield session

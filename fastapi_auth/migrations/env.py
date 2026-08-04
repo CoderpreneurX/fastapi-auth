@@ -6,18 +6,17 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from fastapi_auth.config import settings
+from fastapi_auth.config import get_settings
 from fastapi_auth.database import Base
 import fastapi_auth.models
+
+settings = get_settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.DATABASE_URL.replace("%", "%%")
-)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
