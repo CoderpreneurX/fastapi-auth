@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2 style="margin:0 0 24px;font-size:28px;font-weight:600;color:#111827;">
+    Verify your email
+</h2>
+
+<p style="margin:0 0 16px;font-size:16px;line-height:24px;">
+    Hello
+    <strong>
+        {% if user.first_name or user.last_name %}
+        {{ (user.first_name or "") ~ (" " if user.first_name and user.last_name else "") ~ (user.last_name or "") }}
+        {% else %}
+        {{ user.username or user.email }}
+        {% endif %}
+    </strong>,
+</p>
+
+<p style="margin:0 0 24px;font-size:16px;line-height:24px;">
+    Thank you for creating your account.
+    Please verify your email address by clicking the button below.
+</p>
+
+<table role="presentation" cellspacing="0" cellpadding="0" style="margin:32px 0;">
+    <tr>
+        <td align="center" bgcolor="#2563eb" style="border-radius:6px;">
+            <a href="{{ verification_url }}"
+                style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;">
+                Verify Email
+            </a>
+        </td>
+    </tr>
+</table>
+
+<p style="margin:24px 0 8px;font-size:14px;color:#6b7280;">
+    If the button above doesn't work, copy and paste this link into your browser:
+</p>
+
+<p style="margin:0 0 24px;word-break:break-all;">
+    <a href="{{ verification_url }}">
+        {{ verification_url }}
+    </a>
+</p>
+
+<p style="margin:0;font-size:14px;color:#6b7280;">
+    This verification link was generated for
+    <strong>{{ user.email }}</strong>.
+</p>
+
+{% endblock %}
