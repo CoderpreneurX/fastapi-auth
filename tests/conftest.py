@@ -7,7 +7,10 @@ import pytest
 import pytest_asyncio
 from alembic import command
 from alembic.config import Config
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
 
+from fastapi_auth import setup_auth
 from fastapi_auth.database.session import AsyncSessionLocal, engine
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -115,3 +118,19 @@ async def wait_for_email(mailpit):
         raise AssertionError("Timed out waiting for email.")
 
     return _wait
+
+
+@pytest_asyncio.fixture
+async def app() -> FastAPI:
+    app = FastAPI()
+    setup_auth(app)
+    return app
+
+
+@pytest_asyncio.fixture
+async def client(app: FastAPI):
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
