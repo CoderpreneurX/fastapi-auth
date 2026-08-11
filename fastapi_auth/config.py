@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     JWT_ISSUER: str = APP_NAME  # Optional
     JWT_AUDIENCE: str | None = None  # Optional
 
+    # TOKENS
+    EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS: int = 86400
+
+    # FRONTEND
+    FRONTEND_URL: str = "http://localhost:5173"
+
     model_config = SettingsConfigDict(
         env_file=os.getenv("ENV_FILE", ".env"),
         extra="ignore",
