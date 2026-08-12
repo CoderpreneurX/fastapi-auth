@@ -10,12 +10,14 @@ from fastapi_auth.config import get_settings
 from fastapi_auth.crud.users import UserCRUD
 from fastapi_auth.models.user import User, UserStatus
 from fastapi_auth.models.verification_token import (
-    VerificationToken,
     VerificationTokenType,
 )
 from fastapi_auth.core.email import email_service
 from fastapi_auth.core.hashing import Hashing
-from fastapi_auth.exceptions import UserAlreadyExistsError
+from fastapi_auth.exceptions import (
+    UserAlreadyExistsError,
+    InvalidVerificationTokenError,
+)
 
 
 def generate_verification_token() -> tuple[str, str]:
@@ -99,15 +101,18 @@ class UserService:
 
         raw_token, token_hash = generate_verification_token()
 
-        verification_token = VerificationToken(
+        await self.verification_token_crud.create(
+            self.session,
             user_id=user.id,
             token_hash=token_hash,
             token_type=VerificationTokenType.EMAIL_VERIFICATION,
-            expires_at=datetime.now(UTC)
-            + timedelta(seconds=self.settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS),
+            expires_at=(
+                datetime.now(UTC)
+                + timedelta(
+                    seconds=self.settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_SECONDS
+                )
+            ),
         )
-
-        self.session.add(verification_token)
 
         await self.session.commit()
 
@@ -129,5 +134,64 @@ class UserService:
                 ),
             },
         )
+
+        return user
+
+    async def verify_email(self, raw_token: str) -> User:
+        """
+        Verify a user's email address using a verification token.
+        """
+
+        # Hash the raw token received from the client.
+        token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+
+        # Find the verification token through the token CRUD.
+        verification_token = await self.verification_token_crud.get_by_hash(
+            self.session,
+            token_hash=token_hash,
+            token_type=VerificationTokenType.EMAIL_VERIFICATION,
+        )
+
+        if verification_token is None:
+            raise InvalidVerificationTokenError(
+                "Invalid or expired verification token."
+            )
+
+        # Prevent token reuse.
+        if verification_token.used_at is not None:
+            raise InvalidVerificationTokenError(
+                "Invalid or expired verification token."
+            )
+
+        # Check expiration.
+        if verification_token.expires_at <= datetime.now(UTC):
+            raise InvalidVerificationTokenError(
+                "Invalid or expired verification token."
+            )
+
+        # Fetch the user through UserCRUD.
+        user = await self.user_crud.get_by_id(
+            self.session,
+            verification_token.user_id,
+        )
+
+        if user is None:
+            raise InvalidVerificationTokenError(
+                "Invalid or expired verification token."
+            )
+
+        # Mark the user as verified through UserCRUD.
+        user = await self.user_crud.verify(
+            self.session,
+            user,
+        )
+
+        # Mark the verification token as consumed through VerificationTokenCRUD.
+        await self.verification_token_crud.mark_as_used(
+            self.session,
+            verification_token,
+        )
+
+        await self.session.commit()
 
         return user

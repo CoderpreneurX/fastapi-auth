@@ -9,9 +9,11 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi_auth import setup_auth
 from fastapi_auth.database.session import AsyncSessionLocal, engine
+from fastapi_auth.models.user import User
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -118,6 +120,21 @@ async def wait_for_email(mailpit):
         raise AssertionError("Timed out waiting for email.")
 
     return _wait
+
+
+@pytest_asyncio.fixture
+async def user(session: AsyncSession):
+    user = User(
+        email="john@example.com",
+        username="john",
+        hashed_password="hashed_password",
+    )
+
+    session.add(user)
+    await session.flush()
+    await session.refresh(user)
+
+    return user
 
 
 @pytest_asyncio.fixture
